@@ -15,14 +15,22 @@ import { ensureSwarmProfileConfig } from '../../server/swarm-profile-config'
 
 const HERMES_BIN_CANDIDATES = [
   process.env.HERMES_CLI_BIN,
-  join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes'),
+  process.env.HERMES_BIN,
+  // 2026-11-22 (misty-deepseek): Windows installs ship an .exe launcher; the POSIX
+  // venv/bin/hermes path either does not exist or is a shebang script spawn() cannot
+  // execute directly, which surfaced as "spawn ... ENOENT" on every dispatch.
+  join(homedir(), 'AppData', 'Local', 'hermes', 'bin', 'hermes.exe'),
+  join(homedir(), 'AppData', 'Local', 'hermes', 'bin', 'hermes.EXE'),
+  join(homedir(), '.local', 'bin', 'hermes.exe'),
   join(homedir(), '.local', 'bin', 'hermes'),
+  join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes'),
+  join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes.exe'),
   'hermes',
 ].filter((value): value is string => Boolean(value))
 
 function resolveHermesBin(): string {
   for (const candidate of HERMES_BIN_CANDIDATES) {
-    if (candidate.includes('/')) {
+    if (candidate.includes('/') || candidate.includes('\\')) {
       if (existsSync(candidate)) return candidate
       continue
     }

@@ -7,16 +7,25 @@ import { getHermesRoot, getProfilesDir } from './claude-paths'
 const PROFILE_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 const JOB_ID_RE = /^[A-Fa-f0-9]{8,64}$/
 
+// 2026-11-22 (misty-deepseek): Windows installs ship an .exe launcher; the POSIX
+// venv/bin/hermes candidate either does not exist or is a shebang script spawn() cannot
+// execute, and a bare "hermes" resolves through PATH inconsistently under the dev server.
+// Windows candidates first, then the POSIX ones, and treat \ as a path separator too.
 const HERMES_BIN_CANDIDATES = [
   process.env.HERMES_CLI_BIN,
-  join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes'),
+  process.env.HERMES_BIN,
+  join(homedir(), 'AppData', 'Local', 'hermes', 'bin', 'hermes.exe'),
+  join(homedir(), 'AppData', 'Local', 'hermes', 'bin', 'hermes.EXE'),
+  join(homedir(), '.local', 'bin', 'hermes.exe'),
   join(homedir(), '.local', 'bin', 'hermes'),
+  join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes'),
+  join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes.exe'),
   'hermes',
 ].filter((value): value is string => Boolean(value))
 
 function resolveHermesBin(): string {
   for (const candidate of HERMES_BIN_CANDIDATES) {
-    if (candidate.includes('/')) {
+    if (candidate.includes('/') || candidate.includes('\\')) {
       if (existsSync(candidate)) return candidate
       continue
     }
